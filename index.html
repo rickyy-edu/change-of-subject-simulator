@@ -1,0 +1,1815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HK S2 Math: Change of Subject Retro Arcade</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    body {
+      font-family: 'Silkscreen', 'VT323', monospace;
+      background-color: #0b0c10;
+      color: #e0e6ed;
+      image-rendering: pixelated;
+      user-select: none;
+    }
+    
+    .pixel-font { font-family: 'Press Start 2P', monospace; }
+    .vt-font { font-family: 'VT323', monospace; }
+
+    .pixel-box {
+      border: 4px solid #000;
+      box-shadow: 
+        inset -4px -4px 0px rgba(0, 0, 0, 0.4),
+        inset 4px 4px 0px rgba(255, 255, 255, 0.25),
+        4px 4px 0px #000;
+    }
+
+    .pixel-btn {
+      border: 4px solid #000;
+      box-shadow: inset -4px -4px 0px rgba(0, 0, 0, 0.5), inset 4px 4px 0px rgba(255, 255, 255, 0.4), 4px 4px 0px #000;
+      transition: transform 0.05s, box-shadow 0.05s;
+    }
+    
+    .pixel-btn:hover:not(:disabled) {
+      filter: brightness(1.1);
+      cursor: pointer;
+    }
+
+    .pixel-btn:active:not(:disabled) {
+      transform: translate(3px, 3px);
+      box-shadow: inset -2px -2px 0px rgba(0, 0, 0, 0.5), inset 2px 2px 0px rgba(255, 255, 255, 0.4), 1px 1px 0px #000;
+    }
+
+    .pixel-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      filter: grayscale(0.8);
+    }
+
+    .crt::after {
+      content: " ";
+      display: block;
+      position: absolute;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+      background-size: 100% 4px;
+      z-index: 20;
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    .dz-lhs { background-color: #0f172a; border: 4px dashed #29ADFF; }
+    .dz-rhs { background-color: #2a0a18; border: 4px dashed #FF5555; }
+
+    .sub-zone { transition: all 0.2s ease; }
+    .sub-zone.drag-over-zone {
+      border-color: #FFCC00 !important;
+      background-color: rgba(255, 204, 0, 0.15) !important;
+      transform: scale(1.01);
+    }
+
+    .card-color-blue {
+      background-color: #29ADFF !important;
+      color: #000 !important;
+      border: 3px solid #000;
+      box-shadow: 3px 3px 0px #000;
+    }
+
+    .card-color-red {
+      background-color: #FF5555 !important;
+      color: #000 !important;
+      border: 3px solid #000;
+      box-shadow: 3px 3px 0px #000;
+    }
+
+    .pixel-card {
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      cursor: grab;
+    }
+
+    .pixel-card:active { cursor: grabbing; }
+    .pixel-card.dragging { opacity: 0.5; transform: scale(1.08) rotate(-3deg); }
+    .card-drag-over { outline: 4px dashed #FFCC00; transform: scale(1.08); filter: brightness(1.2); }
+
+    @keyframes flipCard {
+      0% { transform: scaleX(1) rotate(0deg); }
+      50% { transform: scaleX(0) rotate(90deg); filter: brightness(2); }
+      100% { transform: scaleX(1) rotate(0deg); }
+    }
+    .card-flipping { animation: flipCard 0.35s ease-in-out; }
+
+    @keyframes flipPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255, 204, 0, 0.9); }
+      50% { box-shadow: 0 0 16px 6px rgba(255, 204, 0, 1); }
+    }
+    .needs-flip-glow { animation: flipPulse 1.2s infinite; border-color: #FFCC00 !important; }
+
+    @keyframes pixelPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+    .pulse-target { animation: pixelPulse 1.8s infinite; }
+
+    body.scissor-active .pixel-card {
+      cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23ff0000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="11.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="12.12" x2="12" y2="16"/></svg>') 12 12, pointer !important;
+    }
+
+    body.expand-active .pixel-card {
+      cursor: crosshair !important;
+    }
+
+    body.factorize-active .pixel-card {
+      cursor: copy !important;
+    }
+
+    #toast { transition: all 0.3s ease; }
+  </style>
+</head>
+<body class="crt min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between overflow-x-hidden selection:bg-yellow-400 selection:text-black">
+
+  <header class="bg-slate-900 border-b-4 border-black px-4 py-3 flex flex-wrap justify-between items-center z-10 shadow-lg">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 bg-red-500 border-2 border-black flex items-center justify-center text-xl text-yellow-300 font-bold shadow-[2px_2px_0_#000]">
+        <i class="fa-solid fa-gamepad"></i>
+      </div>
+      <div>
+        <h1 class="pixel-font text-sm md:text-base text-yellow-400 tracking-wider">HK S2 MATH: CHANGE OF SUBJECT</h1>
+        <p class="text-xs text-cyan-400 font-mono">Interactive Sandbox • Algebraic Transposition Engine</p>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
+      <button onclick="swapLHSandRHS()" class="pixel-btn bg-cyan-700 hover:bg-cyan-600 text-xs px-2.5 py-1.5 flex items-center gap-1 rounded text-white" title="Swap LHS & RHS">
+        <i class="fa-solid fa-right-left"></i>
+        <span>SWAP SIDES</span>
+      </button>
+
+      <button id="undoBtn" onclick="undoAction()" disabled class="pixel-btn bg-slate-700 hover:bg-slate-600 text-xs px-2.5 py-1.5 flex items-center gap-1 rounded text-white" title="Undo Move">
+        <i class="fa-solid fa-rotate-left"></i>
+        <span>UNDO</span>
+      </button>
+
+      <button id="redoBtn" onclick="redoAction()" disabled class="pixel-btn bg-slate-700 hover:bg-slate-600 text-xs px-2.5 py-1.5 flex items-center gap-1 rounded text-white" title="Redo Move">
+        <i class="fa-solid fa-rotate-right"></i>
+        <span>REDO</span>
+      </button>
+
+      <button onclick="resetCurrentQuestion()" class="pixel-btn bg-amber-600 hover:bg-amber-500 text-xs px-2.5 py-1.5 flex items-center gap-1 rounded text-white">
+        <i class="fa-solid fa-arrows-rotate"></i>
+        <span>RESET</span>
+      </button>
+
+      <div id="soundBtn" onclick="toggleSound()" class="pixel-btn bg-purple-700 hover:bg-purple-600 px-2.5 py-1.5 text-xs flex items-center gap-1 rounded cursor-pointer">
+        <i id="soundIcon" class="fa-solid fa-volume-high text-yellow-300"></i>
+        <span class="hidden sm:inline">SFX</span>
+      </div>
+
+      <div class="bg-black border-2 border-slate-700 px-3 py-1 rounded text-yellow-400 text-xs flex items-center gap-1">
+        <i class="fa-solid fa-trophy text-amber-400"></i>
+        <span id="scoreDisplay" class="pixel-font text-sm">0/9</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl w-full mx-auto p-3 sm:p-5 flex-1 flex flex-col gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div class="bg-slate-900/90 border-2 border-black p-2.5 rounded shadow-[3px_3px_0_#000]">
+        <div class="text-xs font-bold text-cyan-400 mb-1.5 flex justify-between items-center">
+          <span>LVL 1: 2-VARIABLE LINEAR</span>
+          <span class="text-slate-400 text-[10px]">WITH GUIDANCE</span>
+        </div>
+        <div class="grid grid-cols-3 gap-1.5">
+          <button id="qbtn-0" onclick="loadQuestion(0)" class="q-select-btn pixel-btn bg-slate-800 text-xs py-1.5 rounded font-bold">1.1</button>
+          <button id="qbtn-1" onclick="loadQuestion(1)" class="q-select-btn pixel-btn bg-slate-800 text-xs py-1.5 rounded font-bold">1.2</button>
+          <button id="qbtn-2" onclick="loadQuestion(2)" class="q-select-btn pixel-btn bg-slate-800 text-xs py-1.5 rounded font-bold">1.3</button>
+        </div>
+      </div>
+      <div class="bg-slate-900/90 border-2 border-black p-2.5 rounded shadow-[3px_3px_0_#000]">
+        <div class="text-xs font-bold text-pink-400 mb-1.5 flex justify-between items-center">
+          <span>LVL 2: 3-VAR & FRACTIONS</span>
+          <span class="text-slate-400 text-[10px]">NO GUIDANCE</span>
+        </div>
+        <div class="grid grid-cols-3 gap-1.5">
+          <button id="qbtn-3" onclick="loadQuestion(3)" class="q-select-btn pixel-btn bg-slate-800 text-xs py-1.5 rounded font-bold">2.1</button>
+          <button id="qbtn-4" onclick="loadQuestion(4)" class="q-select-btn pixel-btn bg-slate-800 text-xs py-1.5 rounded font-bold">2.2</button>
+          <button id="qbtn-5" onclick="loadQuestion(5)" class="q-select-btn pixel-btn bg-slate-800 text-xs py-1.5 rounded font-bold">2.3</button>
+        </div>
+      </div>
+      <div class="bg-slate-900/90 border-2 border-black p-2.5 rounded shadow-[3px_3px_0_#000]">
+        <div class="text-xs font-bold text-yellow-400 mb-1.5 flex justify-between items-center">
+          <span>LVL 3: FACTORIZATION</span>
+          <span class="text-slate-400 text-[10px]">NO GUIDANCE</span>
+        </div>
+        <div class="grid grid-cols-3 gap-1.5">
+          <button id="qbtn-6" onclick="loadQuestion(6)" class="q-select-btn pixel-btn bg-slate-800 text-xs py-1.5 rounded font-bold">3.1</button>
+          <button id="qbtn-7" onclick="loadQuestion(7)" class="q-select-btn pixel-btn bg-slate-800 text-xs py-1.5 rounded font-bold">3.2</button>
+          <button id="qbtn-8" onclick="loadQuestion(8)" class="q-select-btn pixel-btn bg-slate-800 text-xs py-1.5 rounded font-bold">3.3</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="pixel-box bg-slate-900 p-4 rounded-lg flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex-1">
+        <div class="flex items-center gap-3 mb-1">
+          <span id="qLevelBadge" class="pixel-font text-[10px] bg-red-600 text-white px-2 py-0.5 rounded border border-black">LEVEL 1.1</span>
+          <span id="targetSubjectDisplay" class="vt-font text-2xl text-yellow-300 font-bold tracking-wide">ISOLATE TARGET ON LHS: <span class="text-red-400 underline">x</span></span>
+        </div>
+        <div class="flex items-center gap-2 text-sm text-slate-300">
+          <span class="text-slate-400 font-mono">INITIAL EQUATION:</span>
+          <span id="initialEquationDisplay" class="pixel-font text-cyan-300 text-xs sm:text-sm">y = 2x + 6</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 w-full md:w-auto justify-end">
+        <button onclick="openHintModal()" class="pixel-btn bg-yellow-500 hover:bg-yellow-400 text-black px-4 py-2 text-xs font-bold flex items-center gap-2 rounded">
+          <i class="fa-solid fa-lightbulb text-sm animate-bounce"></i>
+          <span>TACTICAL HINT</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="bg-black/60 border-2 border-slate-800 p-2.5 rounded flex items-center justify-between text-xs overflow-x-auto">
+      <div class="flex items-center gap-2">
+        <span class="pixel-font text-[10px] text-purple-400">STATUS:</span>
+        <span id="stateKeyBadge" class="bg-slate-800 text-cyan-300 font-mono px-2 py-0.5 rounded border border-slate-700">STEP 1</span>
+      </div>
+      <div class="text-slate-300 font-sans text-xs font-semibold ml-4 truncate">
+        <i class="fa-solid fa-circle-info text-cyan-400 mr-1"></i>
+        <span id="stepGuidanceText">Isolate target on LHS! Drag card across '='. Press card to flip sign.</span>
+      </div>
+    </div>
+
+    <div class="pixel-box bg-slate-900/90 p-4 rounded-xl flex flex-col md:flex-row items-stretch justify-between gap-4 relative min-h-[400px]">
+      
+      <!-- LHS DROP ZONE -->
+      <div id="lhsDropZone" class="dz-lhs flex-1 w-full h-full min-h-[240px] md:min-h-[320px] p-3 rounded-lg flex flex-col justify-between items-center relative transition-all">
+        <div class="w-full flex justify-between items-center mb-1">
+          <div class="text-[10px] pixel-font text-cyan-400 bg-slate-950/90 px-2 py-0.5 rounded border border-cyan-800 flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 inline-block"></span>
+            <span>LEFT SIDE (BLUE FACE UP) • TARGET SUBJECT ZONE</span>
+          </div>
+        </div>
+
+        <div id="lhsNumerator" ondragover="allowDrop(event, 'LHS', 'NUM')" ondragleave="handleZoneDragLeave(event)" ondrop="handleDrop(event, 'LHS', 'NUM')" class="sub-zone w-full flex-1 min-h-[75px] border-2 border-dashed border-cyan-500/30 hover:border-cyan-400/80 bg-cyan-950/20 rounded p-2 flex flex-wrap items-center justify-center gap-2 relative my-1">
+          <span class="absolute top-1 left-2 text-[9px] pixel-font text-cyan-500/50 pointer-events-none">NUMERATOR (TOP)</span>
+          <div id="lhsNumCards" class="flex flex-wrap items-center justify-center gap-2.5 w-full h-full"></div>
+        </div>
+
+        <div class="w-full my-1 border-b-4 border-cyan-400 flex items-center justify-center relative">
+          <span class="bg-slate-950 px-2 text-[9px] pixel-font text-cyan-300 -mt-2.5 border border-cyan-800 rounded">FRACTION LINE</span>
+        </div>
+
+        <div id="lhsDenominator" ondragover="allowDrop(event, 'LHS', 'DEN')" ondragleave="handleZoneDragLeave(event)" ondrop="handleDrop(event, 'LHS', 'DEN')" class="sub-zone w-full flex-1 min-h-[60px] border-2 border-dashed border-cyan-500/30 hover:border-cyan-400/80 bg-cyan-950/20 rounded p-2 flex flex-wrap items-center justify-center gap-2 relative my-1">
+          <span class="absolute top-1 left-2 text-[9px] pixel-font text-cyan-500/50 pointer-events-none">DENOMINATOR (BOTTOM)</span>
+          <div id="lhsDenCards" class="flex flex-wrap items-center justify-center gap-2.5 w-full h-full"></div>
+        </div>
+      </div>
+
+      <!-- CENTER ACTION CONTROLS -->
+      <div class="flex flex-col items-center justify-center my-2 md:my-0 z-10 gap-2.5">
+        <div class="pixel-box bg-yellow-400 text-black w-12 h-12 flex items-center justify-center pixel-font text-2xl font-bold rounded shadow-[0_0_15px_rgba(255,204,0,0.5)]">
+          =
+        </div>
+
+        <button onclick="swapLHSandRHS()" title="Swap Left and Right Sides" class="pixel-btn bg-indigo-600 hover:bg-indigo-500 text-white p-2 rounded-lg flex flex-col items-center justify-center border-2 border-black shadow-md w-16">
+          <i class="fa-solid fa-right-left text-lg"></i>
+          <span class="text-[8px] pixel-font mt-1 uppercase tracking-tighter">SWAP</span>
+        </button>
+
+        <div id="scissorToolBtn" draggable="true" ondragstart="handleToolDragStart(event, 'scissor')" onclick="toggleScissorTool()" title="Drag Scissors onto any card or click card in scissor mode to separate!" class="pixel-btn bg-pink-600 hover:bg-pink-500 text-white p-2 rounded-lg flex flex-col items-center justify-center cursor-grab active:cursor-grabbing border-2 border-black shadow-md w-16">
+          <i class="fa-solid fa-scissors text-lg"></i>
+          <span class="text-[8px] pixel-font mt-1 uppercase tracking-tighter">CUT</span>
+        </div>
+
+        <button onclick="submitSolution()" title="Submit Solution for Evaluation" class="pixel-btn bg-green-600 hover:bg-green-500 text-white p-2 rounded-lg flex flex-col items-center justify-center border-2 border-black shadow-md animate-pulse w-16">
+          <i class="fa-solid fa-paper-plane text-lg text-yellow-300"></i>
+          <span class="text-[8px] pixel-font mt-1 uppercase tracking-tighter">SUBMIT</span>
+        </button>
+      </div>
+
+      <!-- RHS COLUMN (DROP ZONE & LEVEL 3 TOOLS) -->
+      <div class="flex-1 w-full flex flex-col gap-2">
+        <!-- RHS DROP ZONE -->
+        <div id="rhsDropZone" class="dz-rhs flex-1 w-full min-h-[240px] md:min-h-[320px] p-3 rounded-lg flex flex-col justify-between items-center relative transition-all">
+          <div class="w-full flex justify-between items-center mb-1">
+            <div class="text-[10px] pixel-font text-red-400 bg-slate-950/90 px-2 py-0.5 rounded border border-red-800 flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span>
+              <span>RIGHT SIDE (RED FACE UP)</span>
+            </div>
+          </div>
+
+          <div id="rhsNumerator" ondragover="allowDrop(event, 'RHS', 'NUM')" ondragleave="handleZoneDragLeave(event)" ondrop="handleDrop(event, 'RHS', 'NUM')" class="sub-zone w-full flex-1 min-h-[75px] border-2 border-dashed border-red-500/30 hover:border-red-400/80 bg-red-950/20 rounded p-2 flex flex-wrap items-center justify-center gap-2 relative my-1">
+            <span class="absolute top-1 left-2 text-[9px] pixel-font text-red-500/50 pointer-events-none">NUMERATOR (TOP)</span>
+            <div id="rhsNumCards" class="flex flex-wrap items-center justify-center gap-2.5 w-full h-full"></div>
+          </div>
+
+          <div class="w-full my-1 border-b-4 border-red-500 flex items-center justify-center relative">
+            <span class="bg-slate-950 px-2 text-[9px] pixel-font text-red-300 -mt-2.5 border border-red-800 rounded">FRACTION LINE</span>
+          </div>
+
+          <div id="rhsDenominator" ondragover="allowDrop(event, 'RHS', 'DEN')" ondragleave="handleZoneDragLeave(event)" ondrop="handleDrop(event, 'RHS', 'DEN')" class="sub-zone w-full flex-1 min-h-[60px] border-2 border-dashed border-red-500/30 hover:border-red-400/80 bg-red-950/20 rounded p-2 flex flex-wrap items-center justify-center gap-2 relative my-1">
+            <span class="absolute top-1 left-2 text-[9px] pixel-font text-red-500/50 pointer-events-none">DENOMINATOR (BOTTOM)</span>
+            <div id="rhsDenCards" class="flex flex-wrap items-center justify-center gap-2.5 w-full h-full"></div>
+          </div>
+        </div>
+
+        <!-- LEVEL 3 TOOLS BELOW RED GRID (RHS) -->
+        <div id="level3ToolsContainer" class="hidden flex items-center justify-center gap-3 bg-slate-950/80 p-2 rounded-lg border-2 border-red-900/60">
+          <!-- LEVEL 3 EXPAND BRACKETS TOOL -->
+          <div id="expandToolBtn" draggable="true" ondragstart="handleToolDragStart(event, 'expand')" onclick="toggleExpandTool()" title="Drag Expand onto bracket cards like a(y-x)!" class="pixel-btn bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded-lg flex items-center justify-center gap-2 cursor-grab active:cursor-grabbing border-2 border-black shadow-md">
+            <i class="fa-solid fa-arrows-left-right-to-line text-sm"></i>
+            <span class="text-[9px] pixel-font uppercase tracking-tighter">EXPAND</span>
+          </div>
+
+          <!-- LEVEL 3 FACTORIZE TOOL -->
+          <div id="factorizeToolBtn" draggable="true" ondragstart="handleToolDragStart(event, 'factorize')" onclick="toggleFactorizeTool()" title="Drag Factorize onto cards with common factors like ay-y!" class="pixel-btn bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg flex items-center justify-center gap-2 cursor-grab active:cursor-grabbing border-2 border-black shadow-md">
+            <i class="fa-solid fa-sitemap text-sm"></i>
+            <span class="text-[9px] pixel-font uppercase tracking-tighter">FACTOR</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="actionDock" class="bg-slate-900 border-2 border-slate-800 p-3 rounded-lg flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div class="flex items-center gap-2">
+        <span class="pixel-font text-[10px] text-amber-400">RULES:</span>
+        <span class="text-slate-300 text-xs font-mono">
+          1. Isolate target on LHS • 2. Multipliers with >1 term show (brackets) • 3. In Level 3: Use ↔️ EXPAND & 🌳 FACTOR below RHS grid
+        </span>
+      </div>
+      <div id="actionButtons" class="flex flex-wrap items-center gap-2"></div>
+    </div>
+
+  </main>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 border-2 border-yellow-400 text-yellow-300 text-xs px-4 py-2.5 rounded-lg shadow-2xl opacity-0 pointer-events-none z-50 flex items-center gap-2 font-mono">
+    <i class="fa-solid fa-circle-info text-pink-400"></i>
+    <span id="toastMsg">Card separated!</span>
+  </div>
+
+  <!-- HINT MODAL -->
+  <div id="hintModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="pixel-box bg-slate-900 border-yellow-500 max-w-lg w-full p-5 rounded-lg text-slate-100 flex flex-col gap-4 relative">
+      <button onclick="closeHintModal()" class="absolute top-3 right-3 text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+      <div class="flex items-center gap-2 text-yellow-400 border-b border-slate-800 pb-2">
+        <i class="fa-solid fa-circle-question text-xl"></i>
+        <h3 class="pixel-font text-xs sm:text-sm">TACTICAL HINT ASSIST</h3>
+      </div>
+      <div class="bg-slate-950 p-3 rounded border border-slate-800">
+        <p id="hintQuestionText" class="vt-font text-xl text-yellow-200"></p>
+      </div>
+      <div class="flex flex-col gap-2.5">
+        <button id="choiceBtnA" onclick="checkHintAnswer('A')" class="pixel-btn bg-slate-800 hover:bg-slate-700 p-3 rounded text-left flex items-center gap-3">
+          <span class="bg-cyan-600 text-black pixel-font text-xs px-2 py-1 rounded">A</span>
+          <span id="choiceTextA" class="text-xs sm:text-sm"></span>
+        </button>
+        <button id="choiceBtnB" onclick="checkHintAnswer('B')" class="pixel-btn bg-slate-800 hover:bg-slate-700 p-3 rounded text-left flex items-center gap-3">
+          <span class="bg-pink-600 text-black pixel-font text-xs px-2 py-1 rounded">B</span>
+          <span id="choiceTextB" class="text-xs sm:text-sm"></span>
+        </button>
+      </div>
+      <div id="hintFeedbackBox" class="hidden p-3 rounded text-xs leading-relaxed border font-mono"></div>
+      <div class="flex justify-end">
+        <button onclick="closeHintModal()" class="pixel-btn bg-slate-700 text-white px-4 py-1.5 text-xs rounded">CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WARNING MODAL -->
+  <div id="warningModal" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="pixel-box bg-red-950 border-red-500 max-w-md w-full p-5 rounded-lg text-slate-100 flex flex-col gap-4 relative">
+      <div class="flex items-center gap-3 text-red-400 border-b border-red-800/80 pb-2">
+        <i class="fa-solid fa-triangle-exclamation text-2xl animate-pulse"></i>
+        <h3 id="warningTitle" class="pixel-font text-xs text-red-300">WARNING!</h3>
+      </div>
+      <div class="bg-black/60 p-4 rounded border border-red-900/60 font-mono text-xs sm:text-sm text-red-200 leading-relaxed">
+        <p id="warningBodyText"></p>
+      </div>
+      <div class="flex justify-end">
+        <button onclick="closeWarningModal()" class="pixel-btn bg-red-600 hover:bg-red-500 text-white px-5 py-2 text-xs font-bold rounded">GOT IT!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VICTORY MODAL -->
+  <div id="victoryModal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="pixel-box bg-slate-900 border-green-500 max-w-md w-full p-6 rounded-lg text-slate-100 flex flex-col items-center gap-4 text-center">
+      <div class="w-16 h-16 bg-yellow-400 border-2 border-black rounded-full flex items-center justify-center text-3xl text-black shadow-[0_0_20px_rgba(255,204,0,0.8)]">
+        <i class="fa-solid fa-crown"></i>
+      </div>
+      <div>
+        <h2 class="pixel-font text-base text-green-400 mb-1">STAGE CLEARED!</h2>
+        <p id="victoryFormulaText" class="vt-font text-2xl text-yellow-300"></p>
+      </div>
+      <p class="text-xs text-slate-300 font-mono">Subject successfully isolated on LHS!</p>
+      <button id="nextStageBtn" onclick="nextQuestion()" class="pixel-btn bg-green-600 hover:bg-green-500 text-white px-6 py-2.5 text-xs font-bold rounded mt-2 flex items-center gap-2">
+        <span>NEXT QUESTION</span>
+        <i class="fa-solid fa-arrow-right"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- COEFFICIENT MODAL -->
+  <div id="coefModal" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="pixel-box bg-slate-900 border-amber-500 max-w-lg w-full p-5 rounded-lg text-slate-100 flex flex-col gap-4 relative">
+      <div class="flex items-center gap-2 text-amber-400 border-b border-slate-800 pb-2">
+        <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+        <h3 class="pixel-font text-xs">MULTIPLIER FLIP CHECK</h3>
+      </div>
+      <div class="bg-slate-950 p-3 rounded border border-slate-800">
+        <p class="vt-font text-xl text-yellow-200">You are flipping a multiplier separated by scissors! Are you sure the sign (+ / -) changes when dividing?</p>
+      </div>
+      <div class="flex flex-col gap-2.5">
+        <button onclick="handleCoefChoice(true)" class="pixel-btn bg-slate-800 hover:bg-slate-700 p-3 rounded text-left flex items-center gap-3">
+          <span class="bg-red-600 text-white pixel-font text-xs px-2 py-1 rounded">A</span>
+          <span class="text-xs sm:text-sm">Yes, moving across '=' ALWAYS flips positive to negative!</span>
+        </button>
+        <button onclick="handleCoefChoice(false)" class="pixel-btn bg-slate-800 hover:bg-slate-700 p-3 rounded text-left flex items-center gap-3">
+          <span class="bg-green-600 text-white pixel-font text-xs px-2 py-1 rounded">B</span>
+          <span class="text-xs sm:text-sm">No! Division retains the sign (+2 remains +2 when dividing).</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRIORITY CONFIRM MODAL -->
+  <div id="priorityConfirmModal" class="hidden fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="pixel-box bg-slate-900 border-amber-500 max-w-lg w-full p-5 rounded-lg text-slate-100 flex flex-col gap-4 relative">
+      <div class="flex items-center gap-2 text-amber-400 border-b border-slate-800 pb-2">
+        <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+        <h3 class="pixel-font text-xs">PRIORITY TRANSPOSE CHECK</h3>
+      </div>
+      <div class="bg-slate-950 p-3 rounded border border-slate-800">
+        <p id="priorityConfirmText" class="vt-font text-xl text-yellow-200">You are moving the subject term before clearing outer constants! Do you want to transpose this term now anyway?</p>
+      </div>
+      <div class="flex flex-col gap-2.5">
+        <button onclick="handlePriorityChoice(true)" class="pixel-btn bg-slate-800 hover:bg-slate-700 p-3 rounded text-left flex items-center gap-3">
+          <span class="bg-amber-500 text-black pixel-font text-xs px-2 py-1 rounded">A</span>
+          <span class="text-xs sm:text-sm">Yes, transpose this term now anyway.</span>
+        </button>
+        <button onclick="handlePriorityChoice(false)" class="pixel-btn bg-slate-800 hover:bg-slate-700 p-3 rounded text-left flex items-center gap-3">
+          <span class="bg-cyan-600 text-black pixel-font text-xs px-2 py-1 rounded">B</span>
+          <span class="text-xs sm:text-sm">No, keep it on this side and clear outer terms first.</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const CURRICULUM_DATA = [
+      {
+        id: "Q1.1", level: "LEVEL 1.1", title: "2-Variable Linear Formula",
+        equation: "y = 2x + 6", targetSubject: "x",
+        cardsLHS: [ { id: "c1", text: "y", flippedText: "y", isFlipped: false, originSide: "LHS", subZone: "NUM", type: "variable" } ],
+        cardsRHS: [
+          { id: "c2", text: "+2x", flippedText: "-2x", isFlipped: false, originSide: "RHS", subZone: "NUM", type: "target_term" },
+          { id: "c3", text: "+6", flippedText: "-6", isFlipped: false, originSide: "RHS", subZone: "NUM", type: "constant" }
+        ],
+        steps: [
+          {
+            key: "STEP_1_COLLECT_CONSTANTS",
+            guidance: "1. Drag [+6] to LHS. 2. PRESS [+6] card to FLIP into [-6]. 3. Drag [-6] onto [y] to COMBINE into 'y - 6'.",
+            actionType: "MOVE_AND_FLIP", targetCardId: "c3", validDropSide: "LHS", illegalTrigger: "c2",
+            warningText: "[WARNING: PRIORITY ERROR!] You cannot isolate coefficient 2 while +6 is attached on RHS! Clear +6 first!"
+          },
+          {
+            key: "STEP_2_ISOLATE_SUBJECT",
+            guidance: "Drag [+2x] across to LHS, then PRESS it to flip sign, or drag ✂️ SCISSORS onto [+2x] to separate into [+2] and [x]!",
+            actionType: "MOVE_COEFFICIENT", targetCardId: "c2", validDropSide: "LHS"
+          }
+        ],
+        hint: {
+          question: "What is the best first move to make x the subject on the LHS in y = 2x + 6?",
+          choiceA: "Drag term +6 across to LHS and press to flip into -6.",
+          choiceB: "Divide both sides by 2 immediately.", correct: "A",
+          feedbackA: "GREAT JOB! Clearing added/subtracted constants first leaves target 2x isolated on one side!",
+          feedbackB: "HOLD ON! If you divide by 2 first, you must divide EVERY term including +6, creating extra fractions (y/2 = x + 3). Moving +6 first is cleaner!"
+        },
+        finalEquation: "x = (y - 6) / 2"
+      },
+      {
+        id: "Q1.2", level: "LEVEL 1.2", title: "2-Variable Linear Formula",
+        equation: "A = 5B - 8", targetSubject: "B",
+        cardsLHS: [ { id: "c1", text: "A", flippedText: "A", isFlipped: false, originSide: "LHS", subZone: "NUM", type: "variable" } ],
+        cardsRHS: [
+          { id: "c2", text: "5B", flippedText: "-5B", isFlipped: false, originSide: "RHS", subZone: "NUM", type: "target_term" },
+          { id: "c3", text: "-8", flippedText: "+8", isFlipped: false, originSide: "RHS", subZone: "NUM", type: "constant" }
+        ],
+        steps: [
+          {
+            key: "STEP_1_COLLECT_CONSTANTS",
+            guidance: "1. Drag [-8] to LHS. 2. PRESS card to FLIP into [+8]. 3. Drag [+8] onto [A] to COMBINE into 'A + 8'.",
+            actionType: "MOVE_AND_FLIP", targetCardId: "c3", validDropSide: "LHS", illegalTrigger: "c2",
+            warningText: "[WARNING: LOCKED TARGET!] Target B is locked inside term 5B! First strip away outer term -8!"
+          },
+          {
+            key: "STEP_2_ISOLATE_SUBJECT",
+            guidance: "Drag ✂️ SCISSORS onto [5B] to separate into [5] and [B], then drag [5] into LHS DENOMINATOR!",
+            actionType: "MOVE_COEFFICIENT", targetCardId: "c2", validDropSide: "LHS"
+          }
+        ],
+        hint: {
+          question: "How should we move -8 across the equals sign?",
+          choiceA: "Drag -8 to LHS and press card to flip sign into +8.",
+          choiceB: "Keep it as -8 on LHS.", correct: "A",
+          feedbackA: "SPOT ON! Crossing the equals sign and flipping reverses subtraction to addition!",
+          feedbackB: "OOF! Crossing the equals sign flips the sign! -8 turns into +8."
+        },
+        finalEquation: "B = (A + 8) / 5"
+      },
+      {
+        id: "Q1.3", level: "LEVEL 1.3", title: "Physics Kinematics Formula",
+        equation: "v = u + at", targetSubject: "a",
+        cardsLHS: [ { id: "c1", text: "v", flippedText: "v", isFlipped: false, originSide: "LHS", subZone: "NUM", type: "variable" } ],
+        cardsRHS: [
+          { id: "c2", text: "u", flippedText: "-u", isFlipped: false, originSide: "RHS", subZone: "NUM", type: "constant" },
+          { id: "c3", text: "+at", flippedText: "-at", isFlipped: false, originSide: "RHS", subZone: "NUM", type: "target_term" }
+        ],
+        steps: [
+          {
+            key: "STEP_1_ISOLATE_TARGET_TERM",
+            guidance: "1. Drag [u] to LHS NUMERATOR. 2. Press [u] to flip into [-u] and combine with [v] into 'v - u'.",
+            actionType: "MOVE_AND_FLIP", targetCardId: "c2", validDropSide: "LHS", illegalTrigger: "c3",
+            warningText: "[WARNING: ILLEGAL OPERATION!] Clear term u before separating product at!"
+          },
+          {
+            key: "STEP_2_SCISSOR_SPLIT",
+            guidance: "Use ✂️ SCISSORS tool on [+at] to separate multiplier 't' from subject 'a'!",
+            actionType: "SCISSOR_SPLIT", targetCardId: "c3"
+          },
+          {
+            key: "STEP_3_MOVE_DENOMINATOR",
+            guidance: "1. Drag multiplier [t] to LHS DENOMINATOR (below fraction line). 2. Click 🔄 SWAP SIDES to place subject 'a' on LHS!",
+            actionType: "MOVE_TO_DENOMINATOR", targetCardId: "t", validDropSide: "LHS"
+          }
+        ],
+        hint: {
+          question: "To isolate variable 'a' in v = u + at, what must be done to multiplier 't'?",
+          choiceA: "Use ✂️ Scissors to split 'a' and 't', then drag 't' to the LHS Denominator.",
+          choiceB: "Move 'at' across together without cutting.", correct: "A",
+          feedbackA: "EXCELLENT! Scissors un-clamp multiplier 't' so it can divide into the denominator on LHS!",
+          feedbackB: "NOT QUITE! Variable 't' is multiplied to 'a'. You must use ✂️ Scissors to separate 't' first!"
+        },
+        finalEquation: "a = (v - u) / t"
+      },
+      {
+        id: "Q2.1", level: "LEVEL 2.1", title: "3-Variable Linear Formula",
+        equation: "P = 3Q + 4R", targetSubject: "Q",
+        cardsLHS: [ { id: "c1", text: "P", flippedText: "P", isFlipped: false, originSide: "LHS", subZone: "NUM", type: "variable" } ],
+        cardsRHS: [
+          { id: "c2", text: "+3Q", flippedText: "-3Q", isFlipped: false, originSide: "RHS", subZone: "NUM", type: "target_term" },
+          { id: "c3", text: "+4R", flippedText: "-4R", isFlipped: false, originSide: "RHS", subZone: "NUM", type: "constant" }
+        ],
+        steps: [],
+        hint: { question: "Target Q is bound in 3Q. What should be moved to LHS first?", choiceA: "Move term +4R across.", choiceB: "Move coefficient 3 across.", correct: "A", feedbackA: "BINGO! Shifting +4R isolates term 3Q completely on RHS.", feedbackB: "NOPE! Shift +4R first to avoid fractional steps!" },
+        finalEquation: "Q = (P - 4R) / 3"
+      },
+      {
+        id: "Q2.2", level: "LEVEL 2.2", title: "Basic Fraction Formula",
+        equation: "K = (m + n) / 5", targetSubject: "m",
+        cardsLHS: [ { id: "c1", text: "K", flippedText: "K", isFlipped: false, originSide: "LHS", subZone: "NUM", type: "variable" } ],
+        cardsRHS: [
+          { id: "c2", text: "m + n", flippedText: "m + n", isFlipped: false, originSide: "RHS", subZone: "NUM", type: "numerator" },
+          { id: "c3", text: "5", flippedText: "5", isFlipped: false, originSide: "RHS", subZone: "DEN", type: "denominator" }
+        ],
+        steps: [],
+        hint: { question: "In fraction K = (m + n) / 5, what move MUST be executed first?", choiceA: "Drag +n to LHS.", choiceB: "Drag denominator 5 to LHS top as a multiplier.", correct: "B", feedbackA: "BLOCKED! +n is locked inside numerator above denominator 5!", feedbackB: "YOU GOT IT! Drag denominator 5 across to LHS top where it becomes multiplier 5K!" },
+        finalEquation: "m = 5K - n"
+      },
+      {
+        id: "Q2.3", level: "LEVEL 2.3", title: "Linear Fraction Formula",
+        equation: "y = (2x - z) / 3", targetSubject: "x",
+        cardsLHS: [ { id: "c1", text: "y", flippedText: "y", isFlipped: false, originSide: "LHS", subZone: "NUM", type: "variable" } ],
+        cardsRHS: [
+          { id: "c2", text: "2x - z", flippedText: "2x - z", isFlipped: false, originSide: "RHS", subZone: "NUM", type: "numerator" },
+          { id: "c3", text: "3", flippedText: "3", isFlipped: false, originSide: "RHS", subZone: "DEN", type: "denominator" }
+        ],
+        steps: [],
+        hint: { question: "After clearing denominator 3 to get 3y = 2x - z, what is next?", choiceA: "Shift term -z across to LHS.", choiceB: "Divide RHS by 2 immediately.", correct: "A", feedbackA: "AWESOME! Moving -z leaves 2x isolated!", feedbackB: "WATCH OUT! Move -z first!" },
+        finalEquation: "x = (3y + z) / 2"
+      },
+      {
+        id: "Q3.1", level: "LEVEL 3.1", title: "Algebraic Fraction with Dual Target",
+        equation: "a = (y + 2) / (y - x)", targetSubject: "y",
+        cardsLHS: [ { id: "c1", text: "a", flippedText: "a", isFlipped: false, originSide: "LHS", subZone: "NUM", type: "variable" } ],
+        cardsRHS: [
+          { id: "c2", text: "y + 2", flippedText: "y + 2", isFlipped: false, originSide: "RHS", subZone: "NUM", type: "numerator" },
+          { id: "c3", text: "(y - x)", flippedText: "(y - x)", isFlipped: false, originSide: "RHS", subZone: "DEN", type: "denominator", isMultiplier: true }
+        ],
+        steps: [
+          { key: "STEP_COMPLEX_ACTIONS", guidance: "1. Drag (y - x) to LHS. 2. Drag ↔️ EXPAND (below red grid) onto card a(y - x). 3. Group y terms & Drag 🌳 FACTOR onto ay - y!", actionType: "EXPAND_LHS", expandedTextLHS: "ay - ax", expandedTextRHS: "y + 2" }
+        ],
+        hint: { question: "Target variable y appears in top AND bottom. What is step #1?", choiceA: "Multiply LHS by denominator (y - x) to eliminate fraction.", choiceB: "Cancel out variable y from top and bottom.", correct: "A", feedbackA: "PERFECT! Clearing algebraic denominator (y - x) across to LHS is step #1!", feedbackB: "ILLEGAL MOVE! Never cancel across + or -! Multiply denominator (y - x) to LHS first!" },
+        finalEquation: "y = (ax + 2) / (a - 1)"
+      },
+      {
+        id: "Q3.2", level: "LEVEL 3.2", title: "Complex Algebraic Fraction",
+        equation: "k = (3p + 1) / (p - 2)", targetSubject: "p",
+        cardsLHS: [ { id: "c1", text: "k", flippedText: "k", isFlipped: false, originSide: "LHS", subZone: "NUM", type: "variable" } ],
+        cardsRHS: [
+          { id: "c2", text: "3p + 1", flippedText: "3p + 1", isFlipped: false, originSide: "RHS", subZone: "NUM", type: "numerator" },
+          { id: "c3", text: "(p - 2)", flippedText: "(p - 2)", isFlipped: false, originSide: "RHS", subZone: "DEN", type: "denominator", isMultiplier: true }
+        ],
+        steps: [],
+        hint: { question: "How should we organize terms on LHS vs RHS?", choiceA: "Collect all terms with target p on LHS, and non-p terms on RHS.", choiceB: "Keep kp on LHS and move 1 to LHS.", correct: "A", feedbackA: "SUPERB! Grouping target terms together sets up factorization!", feedbackB: "NOT QUITE! Collect ALL p terms on one side." },
+        finalEquation: "p = (2k + 1) / (k - 3)"
+      },
+      {
+        id: "Q3.3", level: "LEVEL 3.3", title: "Algebraic Fraction with Implicit -1",
+        equation: "x = (y + a) / (y - b)", targetSubject: "y",
+        cardsLHS: [ { id: "c1", text: "x", flippedText: "x", isFlipped: false, originSide: "LHS", subZone: "NUM", type: "variable" } ],
+        cardsRHS: [
+          { id: "c2", text: "y + a", flippedText: "y + a", isFlipped: false, originSide: "RHS", subZone: "NUM", type: "numerator" },
+          { id: "c3", text: "(y - b)", flippedText: "(y - b)", isFlipped: false, originSide: "RHS", subZone: "DEN", type: "denominator", isMultiplier: true }
+        ],
+        steps: [],
+        hint: { question: "When factorizing xy - y with the FACTOR tool, what multiplier is formed?", choiceA: "y and (x - 1) because -y = -1 × y.", choiceB: "x because y disappears completely.", correct: "A", feedbackA: "GENIUS! -y has an implicit coefficient of -1, forming (x - 1)!", feedbackB: "COMMON TRAP! -y is -1 × y. Placeholder -1 MUST remain!" },
+        finalEquation: "y = (bx + a) / (x - 1)"
+      }
+    ];
+
+    let currentQuestionIdx = 0, currentStepIdx = 0;
+    let completedQuestions = new Array(9).fill(false);
+    let soundEnabled = true;
+    let activeToolMode = null; // 'scissor', 'expand', 'factorize' or null
+    let audioCtx = null, pendingPriorityDrop = null;
+    let activeCardsLHS = [], activeCardsRHS = [];
+    let draggedCardId = null;
+    let historyStack = [], redoStack = [];
+
+    function initAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    function playSfx(type) {
+      if (!soundEnabled) return;
+      try {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+
+        if (type === 'flip') {
+          osc.type = 'sine'; osc.frequency.setValueAtTime(320, now); osc.frequency.exponentialRampToValueAtTime(880, now + 0.18);
+          gain.gain.setValueAtTime(0.35, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.18);
+          osc.start(now); osc.stop(now + 0.18);
+        } else if (type === 'merge') {
+          osc.type = 'triangle'; osc.frequency.setValueAtTime(440, now); osc.frequency.exponentialRampToValueAtTime(660, now + 0.15);
+          gain.gain.setValueAtTime(0.4, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+          osc.start(now); osc.stop(now + 0.15);
+        } else if (type === 'scissor') {
+          osc.type = 'sawtooth'; osc.frequency.setValueAtTime(600, now); osc.frequency.exponentialRampToValueAtTime(300, now + 0.12);
+          gain.gain.setValueAtTime(0.3, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+          osc.start(now); osc.stop(now + 0.12);
+        } else if (type === 'error') {
+          osc.type = 'sawtooth'; osc.frequency.setValueAtTime(160, now); osc.frequency.setValueAtTime(100, now + 0.1);
+          gain.gain.setValueAtTime(0.4, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+          osc.start(now); osc.stop(now + 0.25);
+        } else if (type === 'success') {
+          osc.type = 'triangle'; osc.frequency.setValueAtTime(523.25, now); osc.frequency.setValueAtTime(659.25, now + 0.1);
+          osc.frequency.setValueAtTime(783.99, now + 0.2); osc.frequency.setValueAtTime(1046.50, now + 0.3);
+          gain.gain.setValueAtTime(0.3, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.5);
+          osc.start(now); osc.stop(now + 0.5);
+        } else if (type === 'click') {
+          osc.type = 'square'; osc.frequency.setValueAtTime(420, now);
+          gain.gain.setValueAtTime(0.15, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
+          osc.start(now); osc.stop(now + 0.05);
+        }
+      } catch (e) {}
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      const soundBtn = document.getElementById('soundBtn');
+      const soundIcon = document.getElementById('soundIcon');
+      if (soundEnabled) {
+        soundBtn.classList.replace('bg-slate-700', 'bg-purple-700');
+        soundIcon.className = 'fa-solid fa-volume-high text-yellow-300';
+      } else {
+        soundBtn.classList.replace('bg-purple-700', 'bg-slate-700');
+        soundIcon.className = 'fa-solid fa-volume-xmark text-slate-400';
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMsg').innerText = msg;
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      toast.classList.add('opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 2800);
+    }
+
+    function updateScoreUI() {
+      const count = completedQuestions.filter(Boolean).length;
+      document.getElementById('scoreDisplay').innerText = `${count}/9`;
+    }
+
+    function saveState() {
+      historyStack.push({
+        lhs: JSON.parse(JSON.stringify(activeCardsLHS)),
+        rhs: JSON.parse(JSON.stringify(activeCardsRHS)),
+        stepIdx: currentStepIdx
+      });
+      redoStack = [];
+      updateUndoRedoUI();
+    }
+
+    function undoAction() {
+      if (!historyStack.length) return;
+      playSfx('click');
+      redoStack.push({
+        lhs: JSON.parse(JSON.stringify(activeCardsLHS)),
+        rhs: JSON.parse(JSON.stringify(activeCardsRHS)),
+        stepIdx: currentStepIdx
+      });
+      const prev = historyStack.pop();
+      activeCardsLHS = prev.lhs; activeCardsRHS = prev.rhs; currentStepIdx = prev.stepIdx;
+      renderBoard(); updateStepUI(); updateUndoRedoUI();
+    }
+
+    function redoAction() {
+      if (!redoStack.length) return;
+      playSfx('click');
+      historyStack.push({
+        lhs: JSON.parse(JSON.stringify(activeCardsLHS)),
+        rhs: JSON.parse(JSON.stringify(activeCardsRHS)),
+        stepIdx: currentStepIdx
+      });
+      const next = redoStack.pop();
+      activeCardsLHS = next.lhs; activeCardsRHS = next.rhs; currentStepIdx = next.stepIdx;
+      renderBoard(); updateStepUI(); updateUndoRedoUI();
+    }
+
+    function updateUndoRedoUI() {
+      document.getElementById('undoBtn').disabled = (historyStack.length === 0);
+      document.getElementById('redoBtn').disabled = (redoStack.length === 0);
+    }
+
+    window.onload = function() { loadQuestion(0); updateScoreUI(); };
+
+    function setToolMode(mode) {
+      activeToolMode = (activeToolMode === mode) ? null : mode;
+      document.body.classList.remove('scissor-active', 'expand-active', 'factorize-active');
+      
+      const scissorBtn = document.getElementById('scissorToolBtn');
+      const expandBtn = document.getElementById('expandToolBtn');
+      const factorizeBtn = document.getElementById('factorizeToolBtn');
+
+      if (scissorBtn) scissorBtn.classList.remove('ring-4', 'ring-yellow-400');
+      if (expandBtn) expandBtn.classList.remove('ring-4', 'ring-yellow-400');
+      if (factorizeBtn) factorizeBtn.classList.remove('ring-4', 'ring-yellow-400');
+
+      if (activeToolMode === 'scissor') {
+        document.body.classList.add('scissor-active');
+        if (scissorBtn) scissorBtn.classList.add('ring-4', 'ring-yellow-400');
+        showToast("✂️ Cut Tool ACTIVE! Click any card to separate."); playSfx('scissor');
+      } else if (activeToolMode === 'expand') {
+        document.body.classList.add('expand-active');
+        if (expandBtn) expandBtn.classList.add('ring-4', 'ring-yellow-400');
+        showToast("↔️ Expand Brackets Tool ACTIVE! Click a bracketed card like a(y-x)."); playSfx('click');
+      } else if (activeToolMode === 'factorize') {
+        document.body.classList.add('factorize-active');
+        if (factorizeBtn) factorizeBtn.classList.add('ring-4', 'ring-yellow-400');
+        showToast("🌳 Factorize Tool ACTIVE! Click a card like ay-y to separate multipliers."); playSfx('click');
+      } else {
+        showToast("Tool mode deactivated.");
+      }
+    }
+
+    function toggleScissorTool() { setToolMode('scissor'); }
+    function toggleExpandTool() { setToolMode('expand'); }
+    function toggleFactorizeTool() { setToolMode('factorize'); }
+
+    function handleToolDragStart(e, toolType) {
+      e.dataTransfer.setData('type', toolType);
+    }
+
+    function loadQuestion(idx) {
+      currentQuestionIdx = idx; currentStepIdx = 0;
+      historyStack = []; redoStack = [];
+      activeToolMode = null; document.body.classList.remove('scissor-active', 'expand-active', 'factorize-active');
+      updateUndoRedoUI();
+
+      const q = CURRICULUM_DATA[idx];
+      document.getElementById('qLevelBadge').innerText = q.level;
+      document.getElementById('targetSubjectDisplay').innerHTML = `ISOLATE TARGET ON LHS: <span class="text-red-400 underline font-bold">${q.targetSubject}</span>`;
+      document.getElementById('initialEquationDisplay').innerText = q.equation;
+
+      activeCardsLHS = JSON.parse(JSON.stringify(q.cardsLHS));
+      activeCardsRHS = JSON.parse(JSON.stringify(q.cardsRHS));
+
+      activeCardsLHS.forEach(c => { c.side = 'LHS'; c.originSide = 'LHS'; c.subZone = c.subZone || 'NUM'; c.isFlipped = false; c.needsFlip = false; c.isIdentity = false; });
+      activeCardsRHS.forEach(c => { c.side = 'RHS'; c.originSide = 'RHS'; c.subZone = c.subZone || 'NUM'; c.isFlipped = false; c.needsFlip = false; c.isIdentity = false; });
+
+      document.querySelectorAll('.q-select-btn').forEach((btn, i) => {
+        btn.classList.remove('bg-yellow-500', 'text-black', 'border-yellow-300', 'bg-green-700', 'text-white', 'bg-slate-800', 'text-slate-200');
+        if (i === idx) btn.classList.add('bg-yellow-500', 'text-black', 'border-yellow-300');
+        else if (completedQuestions[i]) btn.classList.add('bg-green-700', 'text-white');
+        else btn.classList.add('bg-slate-800', 'text-slate-200');
+      });
+
+      // Show level 3 tools container only for Level 3 questions (indices 6, 7, 8)
+      const level3Tools = document.getElementById('level3ToolsContainer');
+      if (level3Tools) {
+        if (idx >= 6) {
+          level3Tools.classList.remove('hidden');
+        } else {
+          level3Tools.classList.add('hidden');
+        }
+      }
+
+      renderBoard(); updateStepUI(); playSfx('click');
+    }
+
+    function resetCurrentQuestion() { loadQuestion(currentQuestionIdx); }
+
+    function updateStepUI() {
+      const q = CURRICULUM_DATA[currentQuestionIdx];
+      if (currentQuestionIdx >= 6) {
+        document.getElementById('stateKeyBadge').innerText = "LEVEL 3";
+        document.getElementById('stepGuidanceText').innerHTML = "🔒 <span class='text-yellow-300 font-bold'>Level 3 Mode!</span> Drag ↔️ EXPAND & 🌳 FACTOR below RHS grid to isolate target!";
+      } else if (currentQuestionIdx >= 3) {
+        document.getElementById('stateKeyBadge').innerText = "LEVEL 2";
+        document.getElementById('stepGuidanceText').innerText = "Isolate target on LHS! Drag cards across '=' and flip sign.";
+      } else {
+        const step = q.steps[currentStepIdx];
+        if (step) {
+          document.getElementById('stateKeyBadge').innerText = `STEP ${currentStepIdx + 1}`;
+          document.getElementById('stepGuidanceText').innerText = step.guidance || "Manipulate terms across the equals sign to isolate target on LHS!";
+        } else {
+          document.getElementById('stateKeyBadge').innerText = "FINAL";
+          document.getElementById('stepGuidanceText').innerText = "Subject isolated! Check your solution on the LHS!";
+        }
+      }
+      renderActionDock();
+    }
+
+    function swapLHSandRHS() {
+      saveState(); playSfx('flip');
+      const tempLHS = JSON.parse(JSON.stringify(activeCardsLHS));
+      activeCardsLHS = JSON.parse(JSON.stringify(activeCardsRHS));
+      activeCardsRHS = tempLHS;
+
+      activeCardsLHS.forEach(c => {
+        c.side = 'LHS'; c.originSide = (c.originSide === 'LHS') ? 'RHS' : 'LHS';
+        if (c.subZone !== 'DEN') c.needsFlip = (c.side !== (c.originSide || c.side)) ? !c.isFlipped : c.isFlipped;
+      });
+      activeCardsRHS.forEach(c => {
+        c.side = 'RHS'; c.originSide = (c.originSide === 'LHS') ? 'RHS' : 'LHS';
+        if (c.subZone !== 'DEN') c.needsFlip = (c.side !== (c.originSide || c.side)) ? !c.isFlipped : c.isFlipped;
+      });
+      renderBoard(); showToast("🔄 Swapped LHS and RHS sides!");
+    }
+
+    function renderBoard() {
+      const lhsNumCards = document.getElementById('lhsNumCards'), lhsDenCards = document.getElementById('lhsDenCards');
+      const rhsNumCards = document.getElementById('rhsNumCards'), rhsDenCards = document.getElementById('rhsDenCards');
+      lhsNumCards.innerHTML = ''; lhsDenCards.innerHTML = ''; rhsNumCards.innerHTML = ''; rhsDenCards.innerHTML = '';
+
+      activeCardsLHS.forEach(card => {
+        card.side = 'LHS';
+        const cardElem = createCardElement(card, 'LHS');
+        if (card.subZone === 'DEN') lhsDenCards.appendChild(cardElem); else lhsNumCards.appendChild(cardElem);
+      });
+      activeCardsRHS.forEach(card => {
+        card.side = 'RHS';
+        const cardElem = createCardElement(card, 'RHS');
+        if (card.subZone === 'DEN') rhsDenCards.appendChild(cardElem); else rhsNumCards.appendChild(cardElem);
+      });
+      renderActionDock();
+    }
+
+    function renderActionDock() {
+      const dock = document.getElementById('actionButtons');
+      if (!dock) return;
+      dock.innerHTML = '';
+      const q = CURRICULUM_DATA[currentQuestionIdx];
+      const step = q ? q.steps[currentStepIdx] : null;
+
+      if (step && step.actionType === 'EXPAND_LHS') {
+        const expandBtn = document.createElement('button');
+        expandBtn.className = 'pixel-btn bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded text-xs flex items-center gap-1 font-bold';
+        expandBtn.innerHTML = '<i class="fa-solid fa-arrows-left-right-to-line"></i> EXPAND BRACKETS';
+        expandBtn.onclick = () => {
+          saveState();
+          activeCardsLHS = [{ id: 'exp_lhs', text: step.expandedTextLHS, flippedText: step.expandedTextLHS, side: 'LHS', originSide: 'LHS', subZone: 'NUM', type: 'expression', isIdentity: false, isMultiplier: false }];
+          activeCardsRHS = [{ id: 'exp_rhs', text: step.expandedTextRHS, flippedText: step.expandedTextRHS, side: 'RHS', originSide: 'RHS', subZone: 'NUM', type: 'expression', isIdentity: false, isMultiplier: false }];
+          renderBoard(); showToast("Expanded brackets on both sides!");
+        };
+        dock.appendChild(expandBtn);
+      }
+    }
+
+    function allowDrop(e, side, subZone) {
+      e.preventDefault();
+      const zoneElem = (side === 'LHS') 
+        ? (subZone === 'NUM' ? document.getElementById('lhsNumerator') : document.getElementById('lhsDenominator'))
+        : (subZone === 'NUM' ? document.getElementById('rhsNumerator') : document.getElementById('rhsDenominator'));
+      if (zoneElem) zoneElem.classList.add('drag-over-zone');
+    }
+
+    function handleZoneDragLeave(e) {
+      document.querySelectorAll('.sub-zone').forEach(z => z.classList.remove('drag-over-zone'));
+    }
+
+    function isAdditiveSubtractiveTerm(text) {
+      if (!text) return false;
+      const clean = text.trim();
+      if (clean.startsWith('÷') || clean.startsWith('/') || clean.startsWith('×')) return false;
+      if (/^[+-]?\d+$/.test(clean)) return false;
+      if (clean.startsWith('+') || clean.startsWith('-')) return true;
+      if (['y', 'A', 'P', 'u', 'v', 'K', 'm + n'].includes(clean)) return true;
+      return false;
+    }
+
+    function handleDrop(e, targetSide, targetSubZone) {
+      e.preventDefault();
+      document.querySelectorAll('.sub-zone').forEach(z => z.classList.remove('drag-over-zone'));
+
+      const toolType = e.dataTransfer.getData('type');
+      if (['scissor', 'expand', 'factorize'].includes(toolType)) {
+        showToast("⚠️ Drag tool icons directly onto a specific card!");
+        return;
+      }
+
+      if (!draggedCardId) return;
+
+      let sourceSide = 'LHS';
+      let sourceCards = activeCardsLHS;
+      let cardIdx = activeCardsLHS.findIndex(c => c.id === draggedCardId);
+      let card = activeCardsLHS[cardIdx];
+
+      if (cardIdx === -1) {
+        sourceSide = 'RHS';
+        sourceCards = activeCardsRHS;
+        cardIdx = activeCardsRHS.findIndex(c => c.id === draggedCardId);
+        card = activeCardsRHS[cardIdx];
+      }
+
+      if (!card) return;
+
+      if ((card.isIdentity || (card.text === '0' || card.text === '1') && sourceCards.length === 1) && sourceSide !== targetSide) {
+        triggerWarning("CANNOT DUPLICATE IDENTITY", "⚠️ '0' or '1' is the active numerical identity of an empty side! It cannot be moved across '=' to the other side.");
+        playSfx('error');
+        return;
+      }
+
+      const sourceSubZone = card.subZone || 'NUM';
+      if (sourceSide === targetSide && sourceSubZone !== targetSubZone) {
+        triggerWarning("ILLEGAL SAME-SIDE MOVE", "[ALGEBRA RULE] You cannot drag a card directly between Numerator and Denominator on the same side! Terms must cross '=' to transpose.");
+        playSfx('error');
+        return;
+      }
+
+      if (sourceSubZone === 'DEN' && targetSubZone === 'DEN' && sourceSide !== targetSide) {
+        triggerWarning("ILLEGAL DENOMINATOR TRANSPOSITION", "[ALGEBRA RULE] A term in the Denominator represents division. When transposed across '=', it multiplies into the NUMERATOR on the opposite side!");
+        playSfx('error');
+        return;
+      }
+
+      const sourceNumCards = sourceCards.filter(c => c.subZone === 'NUM' || !c.subZone);
+      const isOnlyNumCard = sourceNumCards.length === 1 && sourceNumCards[0].id === card.id;
+
+      if (targetSubZone === 'DEN' && isAdditiveSubtractiveTerm(card.text) && !isOnlyNumCard) {
+        triggerWarning("ILLEGAL OPERATION RULE", `[OPERATION ERROR] You cannot drag an added/subtracted term (${card.text}) directly into the Denominator (bottom)!\n\nAdditive/subtractive terms cross '=' into the Numerator (top) with an opposite sign.`);
+        playSfx('error');
+        return;
+      }
+
+      const q = CURRICULUM_DATA[currentQuestionIdx];
+      const step = q.steps ? q.steps[currentStepIdx] : null;
+      
+      if (step && step.illegalTrigger && draggedCardId === step.illegalTrigger) {
+        pendingPriorityDrop = { draggedId: draggedCardId, targetSide: targetSide, targetSubZone: targetSubZone };
+        openPriorityConfirmModal(step.warningText);
+        playSfx('error');
+        return;
+      }
+
+      saveState();
+
+      let placeholder = "0";
+      if (sourceSide !== targetSide) {
+          if (targetSubZone === 'DEN' || (card.subZone || 'NUM') === 'DEN') {
+              placeholder = "1";
+          } else {
+              placeholder = "0";
+          }
+      } else {
+          placeholder = (card.subZone || 'NUM') === 'DEN' ? "1" : "0";
+      }
+
+      if (sourceSide === 'LHS') {
+        activeCardsLHS.splice(cardIdx, 1);
+        if (activeCardsLHS.length === 0) {
+          activeCardsLHS.push({
+            id: 'ph_' + Date.now(), text: placeholder, flippedText: placeholder,
+            isFlipped: false, needsFlip: false, side: 'LHS', originSide: 'LHS',
+            subZone: 'NUM', type: 'constant', isIdentity: true, isMultiplier: false
+          });
+        }
+      } else {
+        activeCardsRHS.splice(cardIdx, 1);
+        if (activeCardsRHS.length === 0) {
+          activeCardsRHS.push({
+            id: 'ph_' + Date.now(), text: placeholder, flippedText: placeholder,
+            isFlipped: false, needsFlip: false, side: 'RHS', originSide: 'RHS',
+            subZone: 'NUM', type: 'constant', isIdentity: true, isMultiplier: false
+          });
+        }
+      }
+
+      card.side = targetSide;
+      card.subZone = targetSubZone || 'NUM';
+
+      if (sourceSubZone === 'DEN' && targetSubZone === 'NUM' && sourceSide !== targetSide) {
+        card.originSide = targetSide; 
+        card.needsFlip = false;
+        card.isMultiplier = true;
+        card.type = 'multiplier';
+
+        let cleanText = card.text.trim();
+        if (hasMultipleTerms(cleanText) && !isParenthesized(cleanText)) {
+          card.text = `(${cleanText})`;
+          card.flippedText = getFlippedValue(card.text);
+        }
+
+        showToast(`✖️ Transposed "${card.text}" from bottom to top as a MULTIPLIER!`);
+      } else if (targetSubZone === 'DEN') {
+        card.originSide = targetSide; 
+        card.needsFlip = false;
+      } else {
+        card.needsFlip = (card.side !== (card.originSide || card.side)) ? !card.isFlipped : card.isFlipped;
+      }
+
+      if (targetSide === 'LHS') activeCardsLHS.push(card);
+      else activeCardsRHS.push(card);
+
+      playSfx('click'); renderBoard(); updateStepUI();
+    }
+
+    function createCardElement(card, side) {
+      const div = document.createElement('div');
+      div.id = `card-${card.id}`;
+
+      let colorClass = ''; let backSideLabel = '';
+      const effectiveOrigin = card.originSide || side;
+      if (effectiveOrigin === 'LHS') {
+        colorClass = !card.isFlipped ? 'card-color-blue' : 'card-color-red';
+        backSideLabel = !card.isFlipped ? 'RED 🪞' : 'BLUE 🪞';
+      } else {
+        colorClass = !card.isFlipped ? 'card-color-red' : 'card-color-blue';
+        backSideLabel = !card.isFlipped ? 'BLUE 🪞' : 'RED 🪞';
+      }
+
+      const flipGlow = card.needsFlip ? 'needs-flip-glow' : '';
+      div.className = `pixel-card ${colorClass} ${flipGlow} rounded px-4 py-3 font-bold text-center flex flex-col items-center justify-center relative min-w-[90px] select-none`;
+      div.setAttribute('draggable', 'true');
+
+      const q = CURRICULUM_DATA[currentQuestionIdx];
+      if (card.text.includes(q.targetSubject)) div.classList.add('pulse-target');
+
+      let multBadge = (card.isMultiplier || card.type === 'multiplier' || card.type === 'split_part') ? `<span class="text-[7px] bg-amber-400 text-black font-mono absolute top-0.5 left-1 px-1 rounded font-bold uppercase">× MULTIPLIER</span>` : '';
+      let flipBadge = card.needsFlip ? `<span class="pixel-font text-[9px] bg-yellow-400 text-black px-1.5 py-0.5 rounded font-bold animate-bounce mb-1"><i class="fa-solid fa-hand-pointer mr-1"></i>PRESS TO FLIP</span>` : '';
+      let identityBadge = card.isIdentity ? `<span class="text-[7px] bg-black/40 text-yellow-300 font-mono absolute bottom-0.5 left-1 px-1 rounded">IDENTITY</span>` : '';
+
+      div.innerHTML = `
+        ${multBadge}
+        <span class="text-[8px] opacity-80 font-mono absolute top-1 right-1 bg-black/30 text-white px-1 rounded">${backSideLabel}</span>
+        ${flipBadge}
+        <span class="pixel-font text-xs sm:text-sm tracking-wider mt-1">${card.text}</span>
+        ${identityBadge}
+        <div class="flex items-center gap-1 opacity-40 mt-1"><i class="fa-solid fa-grip-lines text-[9px]"></i></div>
+      `;
+
+      div.addEventListener('dragstart', (e) => { draggedCardId = card.id; e.dataTransfer.setData('text/plain', card.id); e.dataTransfer.setData('type', 'card'); e.target.classList.add('dragging'); });
+      div.addEventListener('dragend', (e) => { if(e.target.classList) e.target.classList.remove('dragging'); draggedCardId = null; });
+      div.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); div.classList.add('card-drag-over'); });
+      div.addEventListener('dragleave', (e) => div.classList.remove('card-drag-over'));
+      div.addEventListener('drop', (e) => handleDropOnCard(e, card, side));
+      div.addEventListener('click', (e) => { 
+        e.stopPropagation(); 
+        if (activeToolMode === 'scissor') separateCard(card);
+        else if (activeToolMode === 'expand') expandCard(card);
+        else if (activeToolMode === 'factorize') factorizeCard(card);
+        else handleCardClick(card, side, div); 
+      });
+
+      return div;
+    }
+
+    let pendingCoefCard = null, pendingCoefSide = null, pendingCoefElem = null;
+
+    function handleCardClick(card, side, element) {
+      if (card.type === 'split_part') {
+        pendingCoefCard = card; pendingCoefSide = side; pendingCoefElem = element;
+        document.getElementById('coefModal').classList.remove('hidden'); playSfx('click'); return;
+      }
+      executeFlipCard(card, side, element);
+    }
+
+    function getFlippedValue(val) {
+      if (!val) return "";
+      let clean = val.trim();
+
+      const negatedParenMatch = clean.match(/^-\(\s*(.*)\s*\)$/);
+      if (negatedParenMatch) return negatedParenMatch[1].trim();
+      if (/^\(.*\)$/.test(clean)) return `-${clean}`;
+
+      if (clean.startsWith('÷')) return clean.substring(1).trim();
+      if (clean.startsWith('×')) return clean.substring(1).trim();
+
+      let flipped = "";
+      let inParen = 0;
+      
+      if (clean[0] !== '-' && clean[0] !== '+') flipped += "-";
+      
+      for (let i = 0; i < clean.length; i++) {
+          if (clean[i] === '(') inParen++;
+          if (clean[i] === ')') inParen--;
+          
+          if (inParen === 0) {
+              if (clean[i] === '+') flipped += '-';
+              else if (clean[i] === '-') flipped += '+';
+              else flipped += clean[i];
+          } else {
+              flipped += clean[i];
+          }
+      }
+      
+      flipped = flipped.trim();
+      if (flipped.startsWith('+')) flipped = flipped.substring(1).trim();
+      flipped = flipped.replace(/-\s*-/g, '+ ');
+      flipped = flipped.replace(/\+\s*\+/g, '+ ');
+      return flipped.trim();
+    }
+
+    function executeFlipCard(card, side, element) {
+      saveState(); playSfx('flip');
+      if (element) element.classList.add('card-flipping');
+      setTimeout(() => {
+        const oldText = card.text;
+        card.text = getFlippedValue(oldText);
+        card.flippedText = oldText;
+        card.isFlipped = !card.isFlipped;
+        if (card.subZone === 'DEN') card.needsFlip = false;
+        else card.needsFlip = (card.side !== (card.originSide || card.side)) ? !card.isFlipped : card.isFlipped;
+        renderBoard(); checkAutoAdvanceStep();
+      }, 180);
+    }
+
+    function handleDropOnCard(e, targetCard, targetSide) {
+      e.preventDefault(); e.stopPropagation();
+      document.querySelectorAll('.pixel-card').forEach(c => c.classList.remove('card-drag-over'));
+      
+      const toolType = e.dataTransfer.getData('type');
+      if (toolType === 'scissor') { separateCard(targetCard); return; }
+      if (toolType === 'expand') { expandCard(targetCard); return; }
+      if (toolType === 'factorize') { factorizeCard(targetCard); return; }
+
+      if (!draggedCardId || draggedCardId === targetCard.id) return;
+      const sourceCard = activeCardsLHS.find(c => c.id === draggedCardId) || activeCardsRHS.find(c => c.id === draggedCardId);
+      if (!sourceCard) return;
+
+      if (sourceCard.side !== targetCard.side) {
+        playSfx('error');
+        triggerWarning("CANNOT COMBINE ACROSS SIDES", "⚠️ You cannot combine cards across the equals sign directly!\nFirst drag the card into the drop zone on the other side.");
+        return;
+      }
+      if (sourceCard.needsFlip || targetCard.needsFlip) {
+        playSfx('error');
+        triggerWarning("UNFLIPPED CARD DETECTED!", "⚠️ You cannot combine cards before flipping them!\nPlease PRESS and FLIP any card that crossed the '=' sign before combining.");
+        return;
+      }
+
+      combineCards(sourceCard, targetCard, targetSide);
+    }
+
+    function formatMultiplication(sText, tText) {
+      let s = sText.trim();
+      let t = tText.trim();
+
+      if (s.startsWith('+')) s = s.substring(1).trim();
+      if (t.startsWith('+')) t = t.substring(1).trim();
+
+      if (s === '1') return t;
+      if (t === '1') return s;
+      if (s === '-1') return getFlippedValue(t);
+      if (t === '-1') return getFlippedValue(s);
+
+      const isPureNumber = (str) => /^-?\d+(\.\d+)?$/.test(str);
+      const isSingleVarOrTerm = (str) => /^-?[a-zA-Z]+$/.test(str) || /^-?\d+[a-zA-Z]+$/.test(str);
+
+      const wrapIfNeeded = (str) => {
+        if (isPureNumber(str) || isSingleVarOrTerm(str) || isParenthesized(str)) {
+          return str;
+        }
+        return `(${str})`;
+      };
+
+      if (isPureNumber(s) && isPureNumber(t)) {
+        return String(Number(s) * Number(t));
+      }
+
+      if (isPureNumber(s) || isPureNumber(t)) {
+        const numStr = isPureNumber(s) ? s : t;
+        const exprStr = isPureNumber(s) ? t : s;
+
+        const numVal = Number(numStr);
+        if (numVal === 0) return "0";
+        if (numVal === 1) return exprStr;
+        if (numVal === -1) return getFlippedValue(exprStr);
+
+        const wrappedExpr = wrapIfNeeded(exprStr);
+
+        if (isSingleVarOrTerm(wrappedExpr)) {
+          if (exprStr.startsWith('-')) {
+            const absExpr = exprStr.substring(1);
+            const netNum = -numVal;
+            return netNum === -1 ? `-${absExpr}` : `${netNum}${absExpr}`;
+          }
+          return `${numStr}${exprStr}`;
+        } else {
+          return `${numStr}${wrappedExpr}`;
+        }
+      }
+
+      const wS = wrapIfNeeded(s);
+      const wT = wrapIfNeeded(t);
+
+      if (isSingleVarOrTerm(s) && !isSingleVarOrTerm(t)) {
+        return `${s}${wT}`;
+      }
+      if (!isSingleVarOrTerm(s) && isSingleVarOrTerm(t)) {
+        return `${t}${wS}`;
+      }
+      if (isSingleVarOrTerm(s) && isSingleVarOrTerm(t)) {
+        return `${s}${t}`;
+      }
+
+      return `${wS}${wT}`;
+    }
+
+    function combineCards(sourceCard, targetCard, side) {
+      saveState(); playSfx('merge');
+      const sText = sourceCard.text.trim();
+      const tText = targetCard.text.trim();
+      let mergedText = "";
+
+      const isSourceMult = sourceCard.isMultiplier || sourceCard.type === 'split_part' || sourceCard.type === 'multiplier';
+      const isTargetMult = targetCard.isMultiplier || targetCard.type === 'split_part' || targetCard.type === 'multiplier';
+      
+      const isMultiplicationIntent = isSourceMult || isTargetMult || (sText === '-1' || sText === '1' || tText === '-1' || tText === '1');
+
+      if (sText === '0' || sText === '+0' || sText === '-0') {
+        mergedText = tText.startsWith('+') ? tText.substring(1).trim() : tText;
+      } else if (tText === '0' || tText === '+0' || tText === '-0') {
+        mergedText = sText.startsWith('+') ? sText.substring(1).trim() : sText;
+      } else if (isMultiplicationIntent) {
+        mergedText = formatMultiplication(sText, tText);
+      } else {
+        let first = tText;
+        let second = sText;
+        
+        if ((sText.startsWith('+') || sText.startsWith('-')) && !(tText.startsWith('+') || tText.startsWith('-'))) {
+          first = tText; second = sText;
+        } else if ((tText.startsWith('+') || tText.startsWith('-')) && !(sText.startsWith('+') || sText.startsWith('-'))) {
+          first = sText; second = tText;
+        }
+        
+        second = second.trim();
+        if (second.startsWith('-')) mergedText = `${first} - ${second.substring(1).trim()}`;
+        else if (second.startsWith('+')) mergedText = `${first} + ${second.substring(1).trim()}`;
+        else mergedText = `${first} + ${second}`;
+      }
+
+      activeCardsLHS = activeCardsLHS.filter(c => c.id !== sourceCard.id && c.id !== targetCard.id);
+      activeCardsRHS = activeCardsRHS.filter(c => c.id !== sourceCard.id && c.id !== targetCard.id);
+
+      const originSide = targetCard.originSide || side;
+      const isFlipped = targetCard.isFlipped || false;
+
+      const newMergedCard = {
+        id: 'merged_' + Date.now(), text: mergedText, flippedText: getFlippedValue(mergedText),
+        isFlipped: isFlipped, needsFlip: false, side: side, originSide: originSide, subZone: targetCard.subZone || 'NUM', type: 'merged', isIdentity: false, isMultiplier: isMultiplicationIntent
+      };
+
+      if (side === 'LHS') activeCardsLHS.push(newMergedCard); else activeCardsRHS.push(newMergedCard);
+
+      renderBoard(); checkAutoAdvanceStep();
+    }
+
+    function unwrapParentheses(str) {
+      let s = str.trim();
+      if (s.startsWith('(') && s.endsWith(')')) {
+        let depth = 0;
+        for (let i = 0; i < s.length - 1; i++) {
+          if (s[i] === '(') depth++;
+          if (s[i] === ')') depth--;
+          if (depth === 0 && i > 0) return str;
+        }
+        return s.substring(1, s.length - 1).trim();
+      }
+      return str;
+    }
+
+    function isParenthesized(str) {
+      let s = str.trim();
+      if (!s.startsWith('(') || !s.endsWith(')')) return false;
+      let depth = 0;
+      for (let i = 0; i < s.length - 1; i++) {
+        if (s[i] === '(') depth++;
+        if (s[i] === ')') depth--;
+        if (depth === 0 && i > 0) return false;
+      }
+      return true;
+    }
+
+    function hasMultipleTerms(str) {
+      const unwrapped = unwrapParentheses(str.trim());
+      let depth = 0;
+      for (let i = 0; i < unwrapped.length; i++) {
+        const ch = unwrapped[i];
+        if (ch === '(') depth++;
+        else if (ch === ')') depth--;
+        else if (depth === 0 && i > 0 && (ch === '+' || ch === '-')) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function splitPolyTerms(str) {
+      let terms = [];
+      let current = '';
+      let depth = 0;
+
+      for (let i = 0; i < str.length; i++) {
+        const ch = str[i];
+        if (ch === '(') depth++;
+        else if (ch === ')') depth--;
+
+        if (depth === 0 && i > 0 && (ch === '+' || ch === '-')) {
+          if (current.trim()) terms.push(current.trim());
+          current = ch;
+        } else {
+          current += ch;
+        }
+      }
+      if (current.trim()) terms.push(current.trim());
+      return terms;
+    }
+
+    function splitPolynomial(str) {
+      let depth = 0;
+      for (let i = 1; i < str.length; i++) {
+        const ch = str[i];
+        if (ch === '(') depth++;
+        else if (ch === ')') depth--;
+        else if (depth === 0 && (ch === '+' || ch === '-')) {
+          const part1 = str.substring(0, i).trim();
+          let part2 = str.substring(i).trim();
+          part2 = part2.replace(/^\+\s*/, '+').replace(/^-\s*/, '-');
+          if (part1 && part2) {
+            return [part1, part2];
+          }
+        }
+      }
+      return null;
+    }
+
+    function separateCard(card) {
+      if (card.isIdentity) {
+        showToast("⚠️ Cannot separate active side identity card!");
+        return;
+      }
+
+      const text = card.text.trim();
+
+      const isMultiTermMultiplier = (card.isMultiplier || card.type === 'multiplier' || isParenthesized(text)) && (hasMultipleTerms(text) || isParenthesized(text));
+      if (isMultiTermMultiplier) {
+        playSfx('error');
+        triggerWarning("CANNOT SEPARATE MULTIPLIER", `⚠️ Multipliers with multiple terms like "${card.text}" cannot be separated! Use whole multiplier (y-x) or EXPAND/FACTOR buttons below the red grid.`);
+        return;
+      }
+
+      saveState(); playSfx('scissor');
+      let parts = []; let cleanText = text;
+      let isMultiplicativeSplit = false;
+      
+      if (cleanText.startsWith('(') && cleanText.endsWith(')')) cleanText = cleanText.substring(1, cleanText.length - 1).trim();
+
+      const polyParts = splitPolynomial(cleanText);
+
+      if (polyParts) {
+        parts = polyParts;
+        isMultiplicativeSplit = false;
+      } else {
+        const negSingleVarMatch = cleanText.match(/^-([a-zA-Z]+)$/);
+        const negNumMatch = cleanText.match(/^-(\d+)$/);
+        const negParenMatch = cleanText.match(/^-(\(.*\))$/);
+        const coefVarMatch = cleanText.match(/^([+-]?\d+)([a-zA-Z]+)$/);
+        const multiVarMatch = cleanText.match(/^([+-]?)([a-zA-Z])([a-zA-Z]+)$/);
+
+        if (negSingleVarMatch) { parts = ["-1", negSingleVarMatch[1]]; isMultiplicativeSplit = true; }
+        else if (negNumMatch) { parts = ["-1", negNumMatch[1]]; isMultiplicativeSplit = true; }
+        else if (negParenMatch) {
+          let inner = negParenMatch[1].trim();
+          if (inner.startsWith('(') && inner.endsWith(')')) inner = inner.substring(1, inner.length - 1).trim();
+          parts = ["-1", inner];
+          isMultiplicativeSplit = true;
+        }
+        else if (coefVarMatch) {
+          let coef = coefVarMatch[1];
+          if (coef.startsWith('+')) coef = coef.substring(1);
+          parts = [coef, coefVarMatch[2]];
+          isMultiplicativeSplit = true;
+        } 
+        else if (multiVarMatch) {
+          let sign = multiVarMatch[1]; let var1 = multiVarMatch[2]; let var2 = multiVarMatch[3];
+          if (sign === '-') var1 = '-' + var1;
+          parts = [var1, var2];
+          isMultiplicativeSplit = true;
+        }
+        else if (cleanText.includes(' / ')) { parts = cleanText.split(' / '); isMultiplicativeSplit = false; }
+        else if (cleanText.includes('÷')) { parts = cleanText.split('÷'); isMultiplicativeSplit = false; }
+      }
+
+      if (parts.length > 1) {
+        const container = (card.side === 'LHS') ? activeCardsLHS : activeCardsRHS;
+        const idx = container.findIndex(c => c.id === card.id);
+        if (idx !== -1) {
+          container.splice(idx, 1);
+          parts.forEach((pText, i) => {
+            let formatted = pText.trim();
+            if (!isMultiplicativeSplit && i > 0 && !formatted.startsWith('+') && !formatted.startsWith('-')) {
+              formatted = '+' + formatted;
+            }
+            container.splice(idx + i, 0, {
+              id: 'part_' + Date.now() + '_' + i,
+              text: formatted,
+              flippedText: getFlippedValue(formatted),
+              isFlipped: card.isFlipped || false,
+              needsFlip: false,
+              side: card.side,
+              subZone: card.subZone || 'NUM',
+              originSide: card.originSide || card.side,
+              type: isMultiplicativeSplit ? 'split_part' : 'term',
+              isIdentity: false,
+              isMultiplier: isMultiplicativeSplit
+            });
+          });
+        }
+        renderBoard();
+        const splitTypeLabel = isMultiplicativeSplit ? "multipliers" : "terms";
+        showToast(`✂️ Separated "${card.text}" into ${splitTypeLabel} [${parts.map(p => p.trim()).join('] and [')}]`);
+      } else {
+        showToast(`⚠️ Card "${card.text}" cannot be separated further!`);
+      }
+    }
+
+    function expandCard(card) {
+      if (currentQuestionIdx < 6) {
+        showToast("⚠️ Expand tool is only enabled in Level 3!");
+        return;
+      }
+      let str = card.text.trim();
+      const match = str.match(/^([+-]?[a-zA-Z0-9]+)\s*\((.+)\)$/);
+      
+      if (!match) {
+        playSfx('error');
+        showToast(`⚠️ Drag Expand Brackets onto a card in form a(b+c), like a(y-x)!`);
+        return;
+      }
+
+      const m = match[1].trim();
+      const inner = match[2].trim();
+      const terms = splitPolyTerms(inner);
+
+      if (!terms || terms.length === 0) {
+        playSfx('error');
+        showToast(`⚠️ Cannot expand card "${card.text}"!`);
+        return;
+      }
+
+      saveState(); playSfx('merge');
+
+      let expandedTerms = [];
+      terms.forEach(t => {
+        expandedTerms.push(multiplyTermStrings(m, t));
+      });
+
+      let expandedText = expandedTerms.join('');
+      if (expandedText.startsWith('+')) expandedText = expandedText.substring(1);
+      expandedText = expandedText.replace(/\+/g, ' + ').replace(/-/g, ' - ').trim();
+      if (expandedText.startsWith('- ')) expandedText = '-' + expandedText.substring(2);
+
+      card.text = expandedText;
+      card.flippedText = getFlippedValue(expandedText);
+      card.type = 'expanded';
+      card.isMultiplier = false;
+
+      renderBoard();
+      showToast(`↔️ Expanded brackets: ${str} ➔ ${expandedText}`);
+    }
+
+    function multiplyTermStrings(m, t) {
+      let mClean = m.trim();
+      let tClean = t.trim();
+
+      let sign = 1;
+      if (mClean.startsWith('-')) { sign *= -1; mClean = mClean.substring(1); }
+      else if (mClean.startsWith('+')) { mClean = mClean.substring(1); }
+
+      if (tClean.startsWith('-')) { sign *= -1; tClean = tClean.substring(1); }
+      else if (tClean.startsWith('+')) { tClean = tClean.substring(1); }
+
+      let coef = 1;
+      const mNumMatch = mClean.match(/^\d+/);
+      if (mNumMatch) {
+        coef *= parseInt(mNumMatch[0], 10);
+        mClean = mClean.substring(mNumMatch[0].length);
+      }
+
+      const tNumMatch = tClean.match(/^\d+/);
+      if (tNumMatch) {
+        coef *= parseInt(tNumMatch[0], 10);
+        tClean = tClean.substring(tNumMatch[0].length);
+      }
+
+      let vars = (mClean + tClean).split('').sort().join('');
+
+      let finalCoefStr = '';
+      const netCoef = sign * coef;
+
+      if (netCoef === 1) {
+        finalCoefStr = vars.length > 0 ? '+' : '+1';
+      } else if (netCoef === -1) {
+        finalCoefStr = vars.length > 0 ? '-' : '-1';
+      } else if (netCoef > 0) {
+        finalCoefStr = '+' + netCoef;
+      } else {
+        finalCoefStr = String(netCoef);
+      }
+
+      return finalCoefStr + vars;
+    }
+
+    function factorizeCard(card) {
+      if (currentQuestionIdx < 6) {
+        showToast("⚠️ Factorize tool is only enabled in Level 3!");
+        return;
+      }
+      const q = CURRICULUM_DATA[currentQuestionIdx];
+      const target = q ? q.targetSubject : "y";
+      let str = card.text.trim();
+
+      const terms = splitPolyTerms(str);
+      if (!terms || terms.length < 2) {
+        playSfx('error');
+        showToast(`⚠️ Drag Factorize onto a polynomial card with >1 term (e.g. ay-y)!`);
+        return;
+      }
+
+      const allHaveTarget = terms.every(t => {
+        const cleanT = t.replace(/^[+-]/, '').trim();
+        return cleanT.includes(target);
+      });
+
+      if (!allHaveTarget) {
+        playSfx('error');
+        showToast(`⚠️ All terms must share common target factor '${target}' (e.g. ay - y)!`);
+        return;
+      }
+
+      saveState(); playSfx('scissor');
+
+      let remainderTerms = [];
+      terms.forEach(t => {
+        let tClean = t.trim();
+        let sign = '';
+        if (tClean.startsWith('+')) { sign = '+'; tClean = tClean.substring(1).trim(); }
+        else if (tClean.startsWith('-')) { sign = '-'; tClean = tClean.substring(1).trim(); }
+
+        let idx = tClean.indexOf(target);
+        let rem = tClean.substring(0, idx) + tClean.substring(idx + target.length);
+        rem = rem.trim();
+
+        if (rem === '') {
+          remainderTerms.push(sign ? sign + '1' : '1');
+        } else {
+          remainderTerms.push(sign + rem);
+        }
+      });
+
+      let remainderStr = remainderTerms.join('');
+      if (remainderStr.startsWith('+')) remainderStr = remainderStr.substring(1);
+      remainderStr = remainderStr.replace(/\+/g, ' + ').replace(/-/g, ' - ').trim();
+      if (remainderStr.startsWith('- ')) remainderStr = '-' + remainderStr.substring(2);
+
+      const bracketPart = `(${remainderStr})`;
+      const factorPart = target;
+
+      const container = (card.side === 'LHS') ? activeCardsLHS : activeCardsRHS;
+      const idx = container.findIndex(c => c.id === card.id);
+
+      if (idx !== -1) {
+        container.splice(idx, 1);
+        
+        container.splice(idx, 0, {
+          id: 'factor_' + Date.now() + '_1',
+          text: factorPart,
+          flippedText: getFlippedValue(factorPart),
+          isFlipped: card.isFlipped || false,
+          needsFlip: false,
+          side: card.side,
+          subZone: card.subZone || 'NUM',
+          originSide: card.originSide || card.side,
+          type: 'multiplier',
+          isIdentity: false,
+          isMultiplier: true
+        });
+
+        container.splice(idx + 1, 0, {
+          id: 'factor_' + Date.now() + '_2',
+          text: bracketPart,
+          flippedText: getFlippedValue(bracketPart),
+          isFlipped: card.isFlipped || false,
+          needsFlip: false,
+          side: card.side,
+          subZone: card.subZone || 'NUM',
+          originSide: card.originSide || card.side,
+          type: 'multiplier',
+          isIdentity: false,
+          isMultiplier: true
+        });
+      }
+
+      renderBoard();
+      showToast(`🌳 Factorized ${str} into multipliers [${factorPart}] and [${bracketPart}]!`);
+    }
+
+    function checkAutoAdvanceStep() {
+      if (currentQuestionIdx >= 3) return;
+      const step = CURRICULUM_DATA[currentQuestionIdx].steps ? CURRICULUM_DATA[currentQuestionIdx].steps[currentStepIdx] : null;
+      if (!step) return;
+
+      if (step.actionType === 'MOVE_AND_FLIP' || step.actionType === 'MOVE_CARD') {
+        const targetInLHS = activeCardsLHS.some(c => c.id === step.targetCardId || c.text.includes('-6') || c.text.includes('+8') || c.text.includes('-u'));
+        if (step.validDropSide === 'LHS' && targetInLHS) { currentStepIdx++; updateStepUI(); }
+      } else if (step.actionType === 'SCISSOR_SPLIT') {
+        const hasBeenSplit = !activeCardsRHS.some(c => c.id === step.targetCardId) && activeCardsRHS.some(c => c.text === 'a' || c.text === 't');
+        if (hasBeenSplit) { currentStepIdx++; updateStepUI(); }
+      } else if (step.actionType === 'MOVE_TO_DENOMINATOR') {
+        const tInDenLHS = activeCardsLHS.some(c => c.text === 't' && c.subZone === 'DEN');
+        if (tInDenLHS) { currentStepIdx++; updateStepUI(); }
+      }
+    }
+
+    function handleCoefChoice(selectedSignFlip) {
+      document.getElementById('coefModal').classList.add('hidden');
+      if (selectedSignFlip) {
+        playSfx('error');
+        triggerWarning("MULTIPLIER ERROR", "⚠️ Incorrect! When dividing by a multiplier, the sign does NOT flip to negative! +2 remains positive 2 in denominator.");
+      } else {
+        playSfx('success'); showToast("👍 Correct! Division retains original multiplier sign.");
+        if (pendingCoefCard && pendingCoefElem) executeFlipCard(pendingCoefCard, pendingCoefSide, pendingCoefElem);
+      }
+      pendingCoefCard = null; pendingCoefSide = null; pendingCoefElem = null;
+    }
+
+    function openPriorityConfirmModal(warningMsg) {
+      document.getElementById('priorityConfirmText').innerText = warningMsg || "You are moving a term out of order! Proceed?";
+      document.getElementById('priorityConfirmModal').classList.remove('hidden');
+    }
+
+    function handlePriorityChoice(proceed) {
+      document.getElementById('priorityConfirmModal').classList.add('hidden');
+      if (proceed && pendingPriorityDrop) {
+        const data = pendingPriorityDrop; pendingPriorityDrop = null;
+        let sourceSide = 'LHS';
+        let cardIdx = activeCardsLHS.findIndex(c => c.id === data.draggedId);
+        let card = activeCardsLHS[cardIdx];
+
+        if (cardIdx === -1) {
+          sourceSide = 'RHS'; cardIdx = activeCardsRHS.findIndex(c => c.id === data.draggedId); card = activeCardsRHS[cardIdx];
+        }
+
+        if (card) {
+          saveState();
+          
+          let placeholder = "0";
+          if (sourceSide !== data.targetSide) {
+              if (data.targetSubZone === 'DEN' || (card.subZone || 'NUM') === 'DEN') {
+                  placeholder = "1";
+              }
+          } else {
+              placeholder = (card.subZone || 'NUM') === 'DEN' ? "1" : "0";
+          }
+
+          if (sourceSide === 'LHS') {
+            activeCardsLHS.splice(cardIdx, 1);
+            if (activeCardsLHS.length === 0) {
+                activeCardsLHS.push({
+                    id: 'ph_' + Date.now(), text: placeholder, flippedText: placeholder,
+                    isFlipped: false, needsFlip: false, side: 'LHS', originSide: 'LHS', subZone: 'NUM', type: 'constant', isIdentity: true, isMultiplier: false
+                });
+            }
+          } else {
+            activeCardsRHS.splice(cardIdx, 1);
+            if (activeCardsRHS.length === 0) {
+                activeCardsRHS.push({
+                    id: 'ph_' + Date.now(), text: placeholder, flippedText: placeholder,
+                    isFlipped: false, needsFlip: false, side: 'RHS', originSide: 'RHS', subZone: 'NUM', type: 'constant', isIdentity: true, isMultiplier: false
+                });
+            }
+          }
+
+          card.side = data.targetSide;
+          card.subZone = data.targetSubZone || 'NUM';
+          card.needsFlip = (card.side !== (card.originSide || card.side)) ? !card.isFlipped : card.isFlipped;
+
+          if (data.targetSide === 'LHS') activeCardsLHS.push(card); else activeCardsRHS.push(card);
+
+          playSfx('click'); renderBoard(); updateStepUI();
+        }
+      } else {
+        pendingPriorityDrop = null;
+      }
+    }
+
+    function triggerWarning(title, bodyText) {
+      document.getElementById('warningTitle').innerText = title || "WARNING: PRIORITY ERROR!";
+      document.getElementById('warningBodyText').innerText = bodyText || "Clear outer terms first!";
+      document.getElementById('warningModal').classList.remove('hidden');
+    }
+    function closeWarningModal() { document.getElementById('warningModal').classList.add('hidden'); }
+
+    function openHintModal() {
+      const q = CURRICULUM_DATA[currentQuestionIdx]; if (!q || !q.hint) return;
+      document.getElementById('hintQuestionText').innerText = q.hint.question;
+      document.getElementById('choiceTextA').innerText = q.hint.choiceA;
+      document.getElementById('choiceTextB').innerText = q.hint.choiceB;
+      document.getElementById('hintFeedbackBox').classList.add('hidden');
+      document.getElementById('hintModal').classList.remove('hidden'); playSfx('click');
+    }
+    function closeHintModal() { document.getElementById('hintModal').classList.add('hidden'); }
+
+    function checkHintAnswer(choice) {
+      const q = CURRICULUM_DATA[currentQuestionIdx]; if (!q || !q.hint) return;
+      const feedbackBox = document.getElementById('hintFeedbackBox');
+      feedbackBox.classList.remove('hidden', 'bg-green-950', 'border-green-600', 'text-green-300', 'bg-red-950', 'border-red-600', 'text-red-300');
+      if (choice === q.hint.correct) {
+        playSfx('success'); feedbackBox.classList.add('bg-green-950', 'border-green-600', 'text-green-300');
+        feedbackBox.innerText = q.hint[`feedback${choice}`] || "CORRECT!";
+      } else {
+        playSfx('error'); feedbackBox.classList.add('bg-red-950', 'border-red-600', 'text-red-300');
+        feedbackBox.innerText = q.hint[`feedback${choice}`] || "INCORRECT!";
+      }
+    }
+
+    function showVictoryModal() {
+      playSfx('success');
+      const q = CURRICULUM_DATA[currentQuestionIdx];
+      completedQuestions[currentQuestionIdx] = true; updateScoreUI();
+      document.getElementById('victoryFormulaText').innerText = q.finalEquation || "Subject Isolated!";
+      document.getElementById('victoryModal').classList.remove('hidden');
+    }
+
+    function nextQuestion() {
+      document.getElementById('victoryModal').classList.add('hidden');
+      if (currentQuestionIdx < CURRICULUM_DATA.length - 1) loadQuestion(currentQuestionIdx + 1);
+      else showToast("🎉 Congratulations! You have completed all questions in the retro arcade!");
+    }
+
+    function submitSolution() {
+      const q = CURRICULUM_DATA[currentQuestionIdx];
+      const target = q.targetSubject;
+
+      const numLHS = activeCardsLHS.filter(c => c.subZone === 'NUM' && !c.isIdentity);
+      const denLHS = activeCardsLHS.filter(c => c.subZone === 'DEN');
+
+      const isIsolatedOnLHS = (numLHS.length === 1 && numLHS[0].text.trim() === target && denLHS.length === 0);
+
+      if (isIsolatedOnLHS) {
+        showVictoryModal();
+      } else {
+        playSfx('error');
+        triggerWarning("SOLUTION EVALUATION", `Target subject '${target}' is not completely isolated alone on LHS Numerator! Check for unflipped cards, remaining multipliers or terms.`);
+      }
+    }
+  </script>
+</body>
+</html>
